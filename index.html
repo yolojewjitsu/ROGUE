@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      * { box-sizing: border-box; }
+      body, html { height: 100%; margin: 0; overflow: hidden; }
+      body { background-color: #000000; color: #ffffff; }
+      h1 { font-family: "Playfair Display"; font-size: 30px; padding: 10px 0px; margin: 0px; }
+      .field-box { border: 2px solid #d0d0d0; float: left; }
+      .field { position: relative; width: 2000px; height: 1200px; }
+      .field .tile { position: absolute; width: 50px; height: 50px; background-size: 100%; background-image: url(images/tile-.png); z-index: 5; }
+      .field .tileW { background-image: url(images/tile-W.png); }
+      .field .tileE { background-image: url(images/tile-E.png); z-index: 10; }
+      .field .tileP { background-image: url(images/tile-P.png); z-index: 10; }
+      .field .tileHP { background-image: url(images/tile-HP.png); z-index: 9; }
+      .field .tileSW { background-image: url(images/tile-SW.png); z-index: 9; }
+      .field .tile .health { background-color: #ff0000; z-index: 11; position: absolute; left: 0px; top: 0px; height: 3px; }
+      .field .tileP .health { background-color: #00ff00; z-index: 11; position: absolute; left: 0px; top: 0px; height: 3px; }
+      .inventory-box { border: 2px solid #d0d0d0; float: left; }
+      .inventory { position: relative; width: 800px; height: 32px; }
+      .cl { clear: both; display: block; }
+    </style>
+  </head>
+  <body>
+    <h1>Игровое поле</h1>
+    <div class="field-box">
+      <div class="field"></div>
+    </div>
+    <div class="cl"></div>
+
+    <script>
+      class Enemy {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+        }
+      }
+      class Game {
+        constructor() {
+          this.map = [];
+          this.mapWidth = 40;
+          this.mapHeight = 24;
+          this.tileSize = 50;
+          this.rooms = [];
+          this.passages = [];
+          this.weapons = [];
+          this.healthPotions = [];
+          this.enemies = [];
+          this.heroPosition = { x: 0, y: 0 };
+          this.heroHealth = 100; 
+          this.heroDamage = 10;
+        }
+
+        generateMap() {
+          for (let i = 0; i < this.mapHeight; i++) {
+            this.map[i] = [];
+            for (let j = 0; j < this.mapWidth; j++) {
+              this.map[i][j] = 'wall';
+            }
+          }
+        }
+
+        generateRooms() {
+          const numRooms = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
+
+          for (let i = 0; i < numRooms; i++) {
+            const roomWidth = Math.floor(Math.random() * (8 - 3 + 1)) + 3;
+            const roomHeight = Math.floor(Math.random() * (8 - 3 + 1)) + 3;
+            const startX = Math.floor(Math.random() * (this.mapWidth - roomWidth));
+            const startY = Math.floor(Math.random() * (this.mapHeight - roomHeight));
+
+            for (let y = 0; y < roomHeight; y++) {
+              for (let x = 0; x < roomWidth; x++) {
+                this.map[startY + y][startX + x] = 'floor';
+              }
+            }
+
+            this.rooms.push({ startX, startY, width: roomWidth, height: roomHeight });
+          }
+        }
+
+        generateCorridors() {
+          const numHorizontalCorridors = Math.floor(Math.random() * (5 - 3 + 1)) + 3;
+          const numVerticalCorridors = Math.floor(Math.random() * (5 - 3 + 1)) + 3;
+
+          for (let i = 0; i < numHorizontalCorridors; i++) {
+            const startX = Math.floor(Math.random() * this.mapWidth);
+            const startY = Math.floor(Math.random() * this.mapHeight);
+            const corridorLength = this.mapWidth;
+
+            for (let j = 0; j < corridorLength; j++) {
+              const currentX = (startX + j) % this.mapWidth; 
+              this.map[startY][currentX] = 'floor';
+            }
+
+            this.passages.push({ startX, startY, isVertical: false, length: corridorLength });
+          }
+
+          for (let i = 0; i < numVerticalCorridors; i++) {
+            const startX = Math.floor(Math.random() * this.mapWidth);
+            const startY = Math.floor(Math.random() * this.mapHeight);
+            const corridorLength = this.mapHeight;
+
+            for (let j = 0; j < corridorLength; j++) {
+              const currentY = (startY + j) % this.mapHeight; 
+              this.map[currentY][startX] = 'floor';
+            }
+
+            this.passages.push({ startX, startY, isVertical: true, length: corridorLength });
+          }
+        }
+
+        generateItems() {
+          this.generateWeapons();
+          this.generateHealthPotions();
+        }
+
+        generateWeapons() {
+          for (let i = 0; i < 2; i++) {
+            const emptyTile = this.getRandomEmptyTile();
+            if (emptyTile) {
+              this.map[emptyTile.y][emptyTile.x] = 'weapon';
+              this.weapons.push({ x: emptyTile.x, y: emptyTile.y });
+            }
+          }
+        }
+
+        generateHealthPotions() {
+          for (let i = 0; i < 10; i++) {
+            const emptyTile = this.getRandomEmptyTile();
+            if (emptyTile) {
+              this.map[emptyTile.y][emptyTile.x] = 'healthPotion';
+              this.healthPotions.push({ x: emptyTile.x, y: emptyTile.y });
+            }
+          }
+        }
+
+        generateEnemies() {
+          for (let i = 0; i < 10; i++) {
+            const emptyTile = this.getRandomEmptyTile();
+            if (emptyTile) {
+              this.map[emptyTile.y][emptyTile.x] = 'enemy';
+              // Используйте новый класс Enemy для создания врага
+              this.enemies.push(new Enemy(emptyTile.x, emptyTile.y));
+            }
+          }
+        }
+
+        generateHero() {
+          const emptyTile = this.getRandomEmptyTile();
+          if (emptyTile) {
+            this.map[emptyTile.y][emptyTile.x] = 'hero';
+            this.heroPosition = { x: emptyTile.x, y: emptyTile.y };
+          }
+        }
+
+        getRandomEmptyTile() {
+          const emptyTiles = [];
+          for (let i = 0; i < this.mapHeight; i++) {
+            for (let j = 0; j < this.mapWidth; j++) {
+              if (this.map[i][j] === 'floor') {
+                emptyTiles.push({ x: j, y: i });
+              }
+            }
+          }
+
+          if (emptyTiles.length === 0) {
+            return null;
+          }
+
+          const randomIndex = Math.floor(Math.random() * emptyTiles.length);
+          return emptyTiles[randomIndex];
+        }
+
+        moveHero(direction) {
+          const newX = this.heroPosition.x + (direction === 'right' ? 1 : direction === 'left' ? -1 : 0);
+          const newY = this.heroPosition.y + (direction === 'down' ? 1 : direction === 'up' ? -1 : 0);
+
+          if (this.isMoveValid(newX, newY)) {
+            const tileContent = this.map[newY][newX];
+
+            // Проверка на наличие меча на новой позиции героя
+            if (tileContent === 'weapon') {
+              console.log('Hero found a weapon and increased damage by 5!');
+            }
+
+            if (tileContent === 'healthPotion') {
+              this.heroHealth += 20; 
+              console.log('Hero found a health potion and gained 20 health!');
+            }
+
+            this.map[this.heroPosition.y][this.heroPosition.x] = 'floor';
+            this.heroPosition.x = newX;
+            this.heroPosition.y = newY;
+            this.map[newY][newX] = 'hero';
+            this.renderMap();
+            this.moveEnemies();
+          }
+        }
+
+
+
+
+        isMoveValid(x, y) {
+          return (
+            x >= 0 && x < this.mapWidth && y >= 0 && y < this.mapHeight &&
+            (this.map[y][x] === 'floor' || this.map[y][x] === 'healthPotion'|| this.map[y][x] === 'hero'|| this.map[y][x] === 'weapon')
+          );
+        }
+        moveEnemies() {
+          this.enemies.forEach((enemy) => {
+            const directions = ['up', 'down', 'left', 'right'];
+            const randomDirection = directions[Math.floor(Math.random() * directions.length)];
+
+            const newEnemyX = enemy.x + (randomDirection === 'right' ? 1 : randomDirection === 'left' ? -1 : 0);
+            const newEnemyY = enemy.y + (randomDirection === 'down' ? 1 : randomDirection === 'up' ? -1 : 0);
+
+            
+            if (this.isMoveValid(newEnemyX, newEnemyY)) {
+              
+              if (newEnemyX === this.heroPosition.x && newEnemyY === this.heroPosition.y) {
+                
+                this.heroHealth -= 50;
+                console.log(`Enemy dealt 50 damage to the hero! Hero health: ${this.heroHealth}`);
+                console.log(`Hero's current health: ${this.heroHealth}`);
+
+                
+                if (this.heroHealth <= 0) {
+                  console.log('Game over! The hero has been defeated.');
+                  this.resetGame();
+                  return;
+                }
+              } else {
+                this.map[enemy.y][enemy.x] = 'floor';
+                enemy.x = newEnemyX;
+                enemy.y = newEnemyY;
+                this.map[newEnemyY][newEnemyX] = 'enemy';
+              }
+            }
+          });
+          if (this.enemies.length === 0) {
+            console.log('Congratulations! You have defeated all enemies and won the game.');
+            this.resetGame();
+          }
+        }
+
+        resetGame() {
+  
+          for (let i = 0; i < this.mapHeight; i++) {
+            for (let j = 0; j < this.mapWidth; j++) {
+              this.map[i][j] = 'wall';
+            }
+          }
+
+          
+          this.rooms = [];
+          this.passages = [];
+          this.weapons = [];
+          this.healthPotions = [];
+          this.enemies = [];
+          this.heroPosition = { x: 0, y: 0 };
+          this.heroHealth = 100; 
+          this.heroDamage = 10;
+
+          
+          this.generateMap();
+          this.generateRooms();
+          this.generateCorridors(); 
+          this.generateItems();
+          this.generateEnemies();
+          this.generateHero();
+          
+          
+          this.renderMap();
+
+          console.log('Game reset');
+        }
+
+
+
+
+
+
+
+
+        attackEnemies() {
+          const adjacentEnemies = this.getAdjacentEnemies();
+          adjacentEnemies.forEach((enemy) => {
+            // Do something to handle the attack on the enemy
+            console.log(`Enemy at (${enemy.x}, ${enemy.y}) has been defeated!`);
+            
+            // Remove the defeated enemy from the map
+            this.map[enemy.y][enemy.x] = 'floor';
+          });
+
+          // Remove defeated enemies from the enemies array
+          this.enemies = this.enemies.filter(enemy => !adjacentEnemies.some(adj => adj.x === enemy.x && adj.y === enemy.y));
+
+          // Move enemies after the attack
+          this.moveEnemies();
+
+          // Render the updated map
+          this.renderMap();
+        }
+
+
+
+
+        // New method to get adjacent enemies
+        getAdjacentEnemies() {
+          const adjacentEnemies = [];
+          const { x, y } = this.heroPosition;
+
+          // Check all adjacent tiles
+          const adjacentTiles = [
+            { x: x - 1, y },
+            { x: x + 1, y },
+            { x, y: y - 1 },
+            { x, y: y + 1 },
+          ];
+
+          // Check if the adjacent tile has an enemy
+          adjacentTiles.forEach((tile) => {
+            const { x, y } = tile;
+            if (this.map[y] && this.map[y][x] === 'enemy') {
+              adjacentEnemies.push({ x, y });
+            }
+          });
+
+          return adjacentEnemies;
+        }
+
+        renderMap() {
+          const field = document.querySelector('.field');
+          field.innerHTML = '';
+
+          for (let i = 0; i < this.mapHeight; i++) {
+            for (let j = 0; j < this.mapWidth; j++) {
+              const tile = document.createElement('div');
+              tile.className = 'tile';
+              tile.style.left = j * this.tileSize + 'px';
+              tile.style.top = i * this.tileSize + 'px';
+
+              switch (this.map[i][j]) {
+                case 'wall':
+                  tile.style.backgroundImage = 'url(images/tile-W.png)';
+                  break;
+                case 'floor':
+                  tile.style.backgroundImage = 'url(images/tile-.png)';
+                  break;
+                case 'enemy':
+                  tile.style.backgroundImage = 'url(images/tile-E.png)';
+                  break;
+                case 'healthPotion':
+                  tile.style.backgroundImage = 'url(images/tile-HP.png)';
+                  break;
+                case 'weapon':
+                  tile.style.backgroundImage = 'url(images/tile-SW.png)';
+                  break;
+                case 'hero':
+                  tile.style.backgroundImage = 'url(images/tile-P.png)';
+                  // Add health bar for hero
+                  const healthBar = document.createElement('div');
+                  healthBar.className = 'health';
+                  const healthPercentage = (this.heroHealth / 100) * 100; // Assuming hero max health is 100
+
+                  // Calculate RGB values based on health percentage
+                  const red = Math.round(255 * (1 - healthPercentage / 100));
+                  const green = Math.round(255 * (healthPercentage / 100));
+
+                  // Set the background color based on RGB values
+                  healthBar.style.backgroundColor = `rgb(${red}, ${green}, 0)`;
+
+                  healthBar.style.width = healthPercentage + '%';
+                  tile.appendChild(healthBar);
+                  break;
+                default:
+                  break;
+              }
+
+              field.appendChild(tile);
+            }
+          }
+        }
+
+
+
+
+        init() {
+          this.generateMap();
+          this.generateRooms();
+          this.generateCorridors(); 
+          this.generateItems();
+          this.generateEnemies();
+          this.generateHero();
+          this.renderMap();
+
+          console.log('Game initialized');
+
+          document.addEventListener('keydown', (event) => {
+            switch (event.key.toLowerCase()) {
+              case 'w':
+                this.moveHero('up');
+                break;
+              case 'a':
+                this.moveHero('left');
+                break;
+              case 's':
+                this.moveHero('down');
+                break;
+              case 'd':
+                this.moveHero('right');
+                break;
+              case ' ': // Space bar for attack
+                this.attackEnemies();
+                break;
+              default:
+                break;
+            }
+          });
+        }
+      }
+
+      var game = new Game();
+      game.init();
+    </script>
+  </body>
+</html>
