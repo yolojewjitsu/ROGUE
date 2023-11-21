@@ -206,22 +206,18 @@
             if (emptyTile) {
               switch (type) {
                 case Weapon:
-                  console.log('Generating weapon');
                   this.map[emptyTile.y][emptyTile.x] = 'weapon';
                   this.weapons.push(new Weapon(emptyTile.x, emptyTile.y));
                   break;
                 case HealthPotion:
-                  console.log('Generating health potion');
                   this.map[emptyTile.y][emptyTile.x] = 'healthPotion';
                   this.healthPotions.push(new HealthPotion(emptyTile.x, emptyTile.y));
                   break;
                 case Enemy:
-                  console.log('Generating enemy');
                   this.map[emptyTile.y][emptyTile.x] = 'enemy';
                   this.enemies.push(new Enemy(emptyTile.x, emptyTile.y));
                   break;
                 case Hero:
-                  console.log('Generating hero');
                   this.map[emptyTile.y][emptyTile.x] = 'hero';
                   this.hero = new Hero(emptyTile.x, emptyTile.y);
                   break;
