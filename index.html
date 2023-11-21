@@ -30,65 +30,65 @@
       <div class="field"></div>
     </div>
     <div class="cl"></div>
-
     <script>
       class Character {
-      constructor(x, y, type, maxHealth, damage) {
-        this.x = x;
-        this.y = y;
-        this.type = type;
-        this.maxHealth = maxHealth;
-        this.health = maxHealth;
-        this.damage = damage;
-      }
-
-      takeDamage(amount) {
-        this.health -= amount;
-        if (this.health <= 0) {
-          console.log(`${this.type} defeated!`);
+        constructor(x, y, type, maxHealth, damage) {
+          this.x = x;
+          this.y = y;
+          this.type = type;
+          this.maxHealth = maxHealth;
+          this.health = maxHealth;
+          this.damage = damage;
         }
-      }
-
-
+    
+        takeDamage(amount) {
+          this.health -= amount;
+          if (this.health <= 0) {
+            console.log(`${this.type} defeated!`);
+          }
+        }
+    
         move(x, y) {
           this.x = x;
           this.y = y;
         }
       }
-
+    
       class Hero extends Character {
         constructor(x, y) {
           super(x, y, 'hero', 100, 10);
         }
+    
         attackEnemy(enemy) {
-          enemy.takeDamage(this.damage); 
+          enemy.takeDamage(this.damage);
         }
       }
-
+    
       class Enemy extends Character {
         constructor(x, y) {
           super(x, y, 'enemy', 10, 50);
         }
       }
-
+    
       class Item {
         constructor(x, y) {
           this.x = x;
           this.y = y;
         }
       }
-
+    
       class Weapon extends Item {
         constructor(x, y) {
           super(x, y);
         }
       }
-
+    
       class HealthPotion extends Item {
         constructor(x, y) {
           super(x, y);
         }
       }
+    
       class Game {
         constructor() {
           this.map = [];
@@ -102,7 +102,7 @@
           this.enemies = [];
           this.hero = null;
         }
-
+    
         generateMap() {
           for (let i = 0; i < this.mapHeight; i++) {
             this.map[i] = [];
@@ -111,137 +111,78 @@
             }
           }
         }
+    
         getRandomNumber(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
+          return Math.floor(Math.random() * (max - min + 1)) + min;
         }
-
+    
         fillArea(startX, startY, width, height, value, isCorridor) {
-        for (let y = startY; y < startY + height; y++) {
-          for (let x = startX; x < startX + width; x++) {
-          if (this.map[y] && this.map[y][x] !== undefined) {
-            if (isCorridor || this.map[y][x] === 'wall') {
-            this.map[y][x] = value;
+          for (let y = startY; y < startY + height; y++) {
+            for (let x = startX; x < startX + width; x++) {
+              if (this.map[y] && this.map[y][x] !== undefined) {
+                if (isCorridor || this.map[y][x] === 'wall') {
+                  this.map[y][x] = value;
+                }
+              }
             }
           }
+        }
+    
+        generateRooms() {
+          const numRooms = this.getRandomNumber(5, 10);
+          for (let i = 0; i < numRooms; i++) {
+            const roomWidth = this.getRandomNumber(3, 8);
+            const roomHeight = this.getRandomNumber(3, 8);
+            const startX = this.getRandomNumber(0, this.mapWidth - roomWidth);
+            const startY = this.getRandomNumber(0, this.mapHeight - roomHeight);
+            this.fillArea(startX, startY, roomWidth, roomHeight, 'floor');
+            this.rooms.push({ startX, startY, width: roomWidth, height: roomHeight });
           }
         }
-        }
-
-
-        generateRooms() {
-        const numRooms = this.getRandomNumber(5, 10);
-        for (let i = 0; i < numRooms; i++) {
-          const roomWidth = this.getRandomNumber(3, 8);
-          const roomHeight = this.getRandomNumber(3, 8);
-          const startX = this.getRandomNumber(0, this.mapWidth - roomWidth);
-          const startY = this.getRandomNumber(0, this.mapHeight - roomHeight);
-          this.fillArea(startX, startY, roomWidth, roomHeight, 'floor');
-          this.rooms.push({ startX, startY, width: roomWidth, height: roomHeight });
-        }
-        }
-
-
+    
         generateCorridors() {
-        this.generateHorizontalCorridors();
-        this.generateVerticalCorridors();
+          this.generateHorizontalCorridors();
+          this.generateVerticalCorridors();
         }
-
+    
         generateHorizontalCorridors() {
-        const numHorizontalCorridors = this.getRandomNumber(3, 5);
-        const corridorLength = this.mapWidth; 
-
-        for (let i = 0; i < numHorizontalCorridors; i++) {
-          const startX = this.getRandomNumber(1, this.mapWidth - corridorLength - 1); 
-          const startY = this.getRandomNumber(0, this.mapHeight);
-          
-          this.fillArea(startX, startY, corridorLength, 1, 'floor', true);
-          this.passages.push({ startX, startY, isVertical: false, length: corridorLength });
+          const numHorizontalCorridors = this.getRandomNumber(3, 5);
+          const corridorLength = this.mapWidth;
+    
+          for (let i = 0; i < numHorizontalCorridors; i++) {
+            const startX = this.getRandomNumber(1, this.mapWidth - corridorLength - 1);
+            const startY = this.getRandomNumber(0, this.mapHeight);
+    
+            this.fillArea(startX, startY, corridorLength, 1, 'floor', true);
+            this.passages.push({ startX, startY, isVertical: false, length: corridorLength });
+          }
         }
-        }
-
+    
         generateVerticalCorridors() {
-        const numVerticalCorridors = this.getRandomNumber(3, 5);
-        const corridorLength = this.mapHeight; 
-
-        for (let i = 0; i < numVerticalCorridors; i++) {
-          const startX = this.getRandomNumber(0, this.mapWidth);
-          const startY = this.getRandomNumber(1, this.mapHeight - corridorLength - 1); 
-          
-          this.fillArea(startX, startY, 1, corridorLength, 'floor', true);
-          this.passages.push({ startX, startY, isVertical: true, length: corridorLength });
+          const numVerticalCorridors = this.getRandomNumber(3, 5);
+          const corridorLength = this.mapHeight;
+    
+          for (let i = 0; i < numVerticalCorridors; i++) {
+            const startX = this.getRandomNumber(0, this.mapWidth);
+            const startY = this.getRandomNumber(1, this.mapHeight - corridorLength - 1);
+    
+            this.fillArea(startX, startY, 1, corridorLength, 'floor', true);
+            this.passages.push({ startX, startY, isVertical: true, length: corridorLength });
+          }
         }
-        }
-
-
-
+    
         generateItems() {
           this.generateWeapons();
           this.generateHealthPotions();
         }
-
+    
         generateWeapons() {
-          for (let i = 0; i < 2; i++) {
-            const emptyTile = this.getRandomEmptyTile();
-            if (emptyTile) {
-              this.map[emptyTile.y][emptyTile.x] = 'weapon';
-              this.weapons.push(new Weapon(emptyTile.x, emptyTile.y));
-            }
-          }
+          this.generateItemsOfType(Weapon, 2);
         }
-
+    
         generateHealthPotions() {
-          for (let i = 0; i < 10; i++) {
-            const emptyTile = this.getRandomEmptyTile();
-            if (emptyTile) {
-              this.map[emptyTile.y][emptyTile.x] = 'healthPotion';
-              this.healthPotions.push(new HealthPotion(emptyTile.x, emptyTile.y));
-            }
-          }
+          this.generateItemsOfType(HealthPotion, 10);
         }
-
-        generateEnemies() {
-          for (let i = 0; i < 10; i++) {
-            const emptyTile = this.getRandomEmptyTile();
-            if (emptyTile) {
-              this.map[emptyTile.y][emptyTile.x] = 'enemy';
-              this.enemies.push(new Enemy(emptyTile.x, emptyTile.y));
-            }
-          }
-        }
-
-        generateHero() {
-          const emptyTile = this.getRandomEmptyTile();
-          if (emptyTile) {
-            this.map[emptyTile.y][emptyTile.x] = 'hero';
-            this.hero = new Hero(emptyTile.x, emptyTile.y, 100, 10);
-          }
-        }
-
-        moveHero(direction) {
-          const newX = this.hero.x + (direction === 'right' ? 1 : direction === 'left' ? -1 : 0);
-          const newY = this.hero.y + (direction === 'down' ? 1 : direction === 'up' ? -1 : 0);
-
-          if (this.isMoveValid(newX, newY)) {
-            const tileContent = this.map[newY][newX];
-
-            if (tileContent === 'weapon') {
-              this.hero.damage += 5;
-              console.log('Hero found a weapon and increased damage by 5!');
-            }
-
-            if (tileContent === 'healthPotion') {
-              this.hero.health += 20;
-              console.log('Hero found a health potion and gained 20 health!');
-            }
-
-            this.map[this.hero.y][this.hero.x] = 'floor';
-            this.hero.move(newX, newY);
-            this.map[newY][newX] = 'hero';
-            this.renderMap();
-            this.moveEnemies();
-          }
-        }
-
         getRandomEmptyTile() {
           const emptyTiles = [];
           for (let i = 0; i < this.mapHeight; i++) {
@@ -259,123 +200,190 @@
           const randomIndex = Math.floor(Math.random() * emptyTiles.length);
           return emptyTiles[randomIndex];
         }
-        isMoveValid(x, y) {
-          return (
-            x >= 0 && x < this.mapWidth && y >= 0 && y < this.mapHeight &&
-            (this.map[y][x] === 'floor' || this.map[y][x] === 'healthPotion'|| this.map[y][x] === 'hero'|| this.map[y][x] === 'weapon')
-          );
-        }
-        moveEnemies() {
-        this.enemies.forEach((enemy) => {
-          const directions = ['up', 'down', 'left', 'right'];
-          const randomDirection = directions[Math.floor(Math.random() * directions.length)];
-
-          const newEnemyX = enemy.x + (randomDirection === 'right' ? 1 : randomDirection === 'left' ? -1 : 0);
-          const newEnemyY = enemy.y + (randomDirection === 'down' ? 1 : randomDirection === 'up' ? -1 : 0);
-
-          if (this.isMoveValid(newEnemyX, newEnemyY)) {
-
-            if (newEnemyX === this.hero.x && newEnemyY === this.hero.y) {
-
-              this.hero.health -= 50;
-              console.log(`Enemy dealt 50 damage to the hero! Hero health: ${this.hero.health}`);
-              console.log(`Hero's current health: ${this.hero.health}`);
-
-              if (this.hero.health <= 0) {
-                console.log('Game over! The hero has been defeated.');
-                this.resetGame();
-                return;
+        generateItemsOfType(type, count) {
+          for (let i = 0; i < count; i++) {
+            const emptyTile = this.getRandomEmptyTile();
+            if (emptyTile) {
+              switch (type) {
+                case Weapon:
+                  console.log('Generating weapon');
+                  this.map[emptyTile.y][emptyTile.x] = 'weapon';
+                  this.weapons.push(new Weapon(emptyTile.x, emptyTile.y));
+                  break;
+                case HealthPotion:
+                  console.log('Generating health potion');
+                  this.map[emptyTile.y][emptyTile.x] = 'healthPotion';
+                  this.healthPotions.push(new HealthPotion(emptyTile.x, emptyTile.y));
+                  break;
+                case Enemy:
+                  console.log('Generating enemy');
+                  this.map[emptyTile.y][emptyTile.x] = 'enemy';
+                  this.enemies.push(new Enemy(emptyTile.x, emptyTile.y));
+                  break;
+                case Hero:
+                  console.log('Generating hero');
+                  this.map[emptyTile.y][emptyTile.x] = 'hero';
+                  this.hero = new Hero(emptyTile.x, emptyTile.y);
+                  break;
+                default:
+                  break;
               }
-            } else {
-              this.map[enemy.y][enemy.x] = 'floor';
-              enemy.move(newEnemyX, newEnemyY);
-              this.map[newEnemyY][newEnemyX] = 'enemy';
             }
           }
-        });
-
-        if (this.enemies.length === 0) {
-          console.log('Congratulations! You have defeated all enemies and won the game.');
-          this.resetGame();
         }
-      }
 
 
-      resetGame() {
-      
-      for (let i = 0; i < this.mapHeight; i++) {
-        for (let j = 0; j < this.mapWidth; j++) {
-          this.map[i][j] = 'wall';
+
+    
+        generateEnemies() {
+          this.generateItemsOfType(Enemy, 10);
         }
-      }
 
-      
-      this.rooms = [];
-      this.passages = [];
-      this.weapons = [];
-      this.healthPotions = [];
-      this.enemies = [];
-      this.hero = null;
+    
+        generateHero() {
+          this.generateItemsOfType(Hero, 1);
+        }
 
-      
-      this.generateMap();
-      this.generateRooms();
-      this.generateCorridors();
-      this.generateItems();
-      this.generateEnemies();
-      this.generateHero();
+        isMoveValid(x, y) {
+          return (x >= 0 && x < this.mapWidth && y >= 0 && y < this.mapHeight &&
+            (this.map[y][x] === 'floor' || this.map[y][x] === 'weapon' || this.map[y][x] === 'healthPotion' || this.map[y][x] === 'hero')
+          );
+        }
 
-      this.renderMap();
 
-      console.log('Game reset');
-    }
+        moveCharacter(character, direction) {
+          const newX = character.x + (direction === 'right' ? 1 : direction === 'left' ? -1 : 0);
+          const newY = character.y + (direction === 'down' ? 1 : direction === 'up' ? -1 : 0);
+    
+          if (this.isMoveValid(newX, newY)) {
+            const tileContent = this.map[newY][newX];
+    
+            if (tileContent === 'weapon') {
+              character.damage += 5;
+              console.log(`${character.type} found a weapon and increased damage by 5!`);
+            }
+    
+            if (tileContent === 'healthPotion') {
+              character.health += 20;
+              console.log(`${character.type} found a health potion and gained 20 health!`);
+            }
+    
+            this.map[character.y][character.x] = 'floor';
+            character.move(newX, newY);
+            this.map[newY][newX] = character.type;
+            this.renderMap();
+            this.moveEnemies();
+          }
+        }
+    
+        moveHero(direction) {
+          this.moveCharacter(this.hero, direction);
+        }
+    
+        moveEnemies() {
+          this.enemies.forEach((enemy) => {
+            const directions = ['up', 'down', 'left', 'right'];
+            const randomDirection = directions[Math.floor(Math.random() * directions.length)];
+    
+            const newEnemyX = enemy.x + (randomDirection === 'right' ? 1 : randomDirection === 'left' ? -1 : 0);
+            const newEnemyY = enemy.y + (randomDirection === 'down' ? 1 : randomDirection === 'up' ? -1 : 0);
+    
+            if (this.isMoveValid(newEnemyX, newEnemyY)) {
+              if (newEnemyX === this.hero.x && newEnemyY === this.hero.y) {
+                this.hero.takeDamage(50);
+                console.log(`Enemy dealt 50 damage to the hero! Hero health: ${this.hero.health}`);
+                console.log(`Hero's current health: ${this.hero.health}`);
+    
+                if (this.hero.health <= 0) {
+                  console.log('Game over! The hero has been defeated.');
+                  this.resetGame();
+                  return;
+                }
+              } else {
+                this.map[enemy.y][enemy.x] = 'floor';
+                enemy.move(newEnemyX, newEnemyY);
+                this.map[newEnemyY][newEnemyX] = 'enemy';
+              }
+            }
+          });
+    
+          if (this.enemies.length === 0) {
+            console.log('Congratulations! You have defeated all enemies and won the game.');
+            this.resetGame();
+          }
+        }
+    
+        resetGame() {
+          for (let i = 0; i < this.mapHeight; i++) {
+            for (let j = 0; j < this.mapWidth; j++) {
+              this.map[i][j] = 'wall';
+            }
+          }
+    
+          this.rooms = [];
+          this.passages = [];
+          this.weapons = [];
+          this.healthPotions = [];
+          this.enemies = [];
+          this.hero = null;
+    
+          this.generateMap();
+          this.generateRooms();
+          this.generateCorridors();
+          this.generateItems();
+          this.generateEnemies();
+          this.generateHero();
+    
+          this.renderMap();
+    
+          console.log('Game reset');
+        }
+    
         attackEnemies() {
           const adjacentEnemies = this.getAdjacentEnemies();
           adjacentEnemies.forEach((enemy) => {
             console.log(`Enemy at (${enemy.x}, ${enemy.y}) has been defeated!`);
             this.map[enemy.y][enemy.x] = 'floor';
           });
-
+    
           this.enemies = this.enemies.filter((enemy) => !adjacentEnemies.some((adj) => adj.x === enemy.x && adj.y === enemy.y));
-
+    
           this.moveEnemies();
-
           this.renderMap();
         }
+    
         getAdjacentEnemies() {
           const adjacentEnemies = [];
           const { x, y } = this.hero;
-
+    
           const adjacentTiles = [
             { x: x - 1, y },
             { x: x + 1, y },
             { x, y: y - 1 },
             { x, y: y + 1 },
           ];
-
+    
           adjacentTiles.forEach((tile) => {
             const { x, y } = tile;
             if (this.map[y] && this.map[y][x] === 'enemy') {
               adjacentEnemies.push({ x, y });
             }
           });
-
+    
           return adjacentEnemies;
         }
-
-
-
+    
         renderMap() {
           const field = document.querySelector('.field');
           field.innerHTML = '';
-
+    
           for (let i = 0; i < this.mapHeight; i++) {
             for (let j = 0; j < this.mapWidth; j++) {
               const tile = document.createElement('div');
               tile.className = 'tile';
               tile.style.left = j * this.tileSize + 'px';
               tile.style.top = i * this.tileSize + 'px';
-
+    
               switch (this.map[i][j]) {
                 case 'wall':
                   tile.style.backgroundImage = 'url(images/tile-W.png)';
@@ -394,14 +402,14 @@
                   break;
                 case 'hero':
                   tile.style.backgroundImage = 'url(images/tile-P.png)';
-
+    
                   const healthBar = document.createElement('div');
                   healthBar.className = 'health';
                   const healthPercentage = (this.hero.health / this.hero.maxHealth) * 100;
-
+    
                   const red = Math.round(255 * (1 - healthPercentage / 100));
                   const green = Math.round(255 * (healthPercentage / 100));
-
+    
                   healthBar.style.backgroundColor = `rgb(${red}, ${green}, 0)`;
                   healthBar.style.width = healthPercentage + '%';
                   tile.appendChild(healthBar);
@@ -409,29 +417,23 @@
                 default:
                   break;
               }
-
+    
               field.appendChild(tile);
             }
           }
         }
-
-
-
-
-
-
-
+    
         init() {
           this.generateMap();
           this.generateRooms();
-          this.generateCorridors(); 
+          this.generateCorridors();
           this.generateItems();
           this.generateEnemies();
           this.generateHero();
           this.renderMap();
-
+    
           console.log('Game initialized');
-
+    
           document.addEventListener('keydown', (event) => {
             switch (event.key.toLowerCase()) {
               case 'w':
@@ -455,9 +457,9 @@
           });
         }
       }
-
+    
       var game = new Game();
       game.init();
-    </script>
+    </script>    
   </body>
 </html>
